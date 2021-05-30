@@ -1,0 +1,16 @@
+[Unit]
+Description=Sensirion SPS30-Telegraf interface
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=pi
+WorkingDirectory=/home/pi/sps30
+ExecStart=/home/pi/sps30/sps30_telegraf_monitor.py
+
+[Install]
+WantedBy=multi-user.target
+

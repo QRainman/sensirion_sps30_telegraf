@@ -51,6 +51,7 @@ def parse_options():
   parser.add_option('-p', '--port', dest='port', type = 'string', help='path to serial port io file', default='/dev/ttyAMA0')
   parser.add_option('-l', '--location', dest='location', type = 'string', help='location of the sensor', default='UnderStairs')
   parser.add_option('-t', '--telegraf_address', dest='telegraf', type = 'string', help='URL for telegraf instance', default='http://192.168.178.220:8090/telegraf')
+  parser.add_option('-i', '--interval', dest='interval', type = 'int', help='Seconds between waking up and capturing data', default='300')
 
   return parser.parse_args()
 
@@ -129,9 +130,24 @@ def upload_telegraf(options, sensor_id, data):
       log.error('Failed to submit data string %s' % telegraf_string)
       log.error(traceback.format_exc())
 
+def main_loop(options):
+  while True:
+    before = time.time()
+    sensor_id, data = readData(options)
+    upload_telegraf(options, sensor_id, data)
+    if options.verbose:
+      print(sensor_id, data)
+    after = time.time()
+    diff = options.interval - (after - before)
+    if diff > 0:
+      time.sleep(diff)
+    
 
 def main():
   options, args = parse_options()
+  main_loop(options)
+
+  #Never gets called
   sensor_id, data = readData(options)
   upload_telegraf(options, sensor_id, data)
   print(sensor_id, data)
