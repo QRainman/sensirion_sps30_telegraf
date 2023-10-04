@@ -12,7 +12,10 @@ import requests
 from optparse import OptionParser
 import traceback
 
+logging.basicConfig()
 log = logging.getLogger('SPS30_Sensor')
+log.setLevel(logging.ERROR)
+
 SENSOR_VALUES = ['PM1.0', 'PM2.5', 'PM4.0', 'PM10', 'N_PM0.5', 'N_PM1.0', 'N_PM2.5', 'N_PM4.0', 'N_PM10', 'avg_size']
 
 
@@ -60,19 +63,19 @@ def parse_options():
   parser.add_option('-b', '--baud_rate', dest='baud_rate', type='int', help='Serial communications port baud rate. Default: 115200', default=115200)
   parser.add_option('-a', '--slave_address', dest='slave_address', type='int', help='Sensor slave address. Default: 0', default=0)
   parser.add_option('-m', '--measurement', dest='measurement', type='string', help='The measurement string used to submit to telegraf', default='sps')
-  parser.add_option('-d', '--dry_run', dest='dry_run', type='bool', action='store_true', default='false', help='Read sensor but do not actually send data to telegraf')
-  parser.add_option('--pm24', dest='pm_24', type='bool', action='store_true', default=False, help='Backward compatibility: Store PM2.5 values with PM2.4 tag')
-  parser.add_option('-t', '--telegraf_address', dest='telegraf', type='string', help='URL for telegraf instance. default: "http://192.168.178.220:8090/telegraf"',
-                    default='http://192.168.178.220:8090/telegraf')
+  parser.add_option('-d', '--dry_run', dest='dry_run', action='store_true', default=False, help='Read sensor but do not actually send data to telegraf')
+  parser.add_option('--pm24', dest='pm_24', action='store_true', default=False, help='Backward compatibility: Store PM2.5 values with PM2.4 tag')
+  parser.add_option('-t', '--telegraf_address', dest='telegraf', type='string', help='URL for telegraf instance. default: "http://192.168.160.220:8090/telegraf"',
+                    default='http://192.168.160.220:8090/telegraf')
   parser.add_option('--pm_as_field', dest='pm_as_field', action='store_true', default=False,
                     help='If set, will submit all sensor values as one record. Values will be stored as fields named PMXX or NPM_XX.'
                          'If not set, every sensor value will be submitted as individual record with field named "value" and additional tag called"pm"')
   options, args = parser.parse_args()
 
-  if hasattr(options, 'verbose'):
+  if options.verbose:
     if options.verbose == 1:
       log.setLevel(logging.INFO)
-    if options.verbose == 2:
+    if options.verbose >= 2:
       log.setLevel(logging.DEBUG)
 
   return options, args
@@ -90,7 +93,7 @@ def readData(options):
       log.warning(traceback.format_exc())
     sensor_id = device.get_serial_number()
 
-    if hasattr(options, 'verbose') and options.verbose == 3:
+    if options.verbose and options.verbose == 3:
       log.debug(f'Version: {device.get_version()}')
       log.debug(f'Product Name: {device.get_product_name()}')
       log.debug(f'Article Code: {device.get_article_code()}')
@@ -141,7 +144,7 @@ def upload_telegraf(options, sensor_id, data):
   session.trust_env = False
 
   if options.pm_as_field:
-    data = [str(data)]
+    data = [str(x) for x in data]
     fields = ','.join(['='.join(x) for x in zip(SENSOR_VALUES, data)])
     telegraf_string = f'{options.measurement},location={options.location},sensor_id={sensor_id} {fields} {timestamp}'
     send_telegraf_request(options, session, telegraf_string)
@@ -169,7 +172,8 @@ def main_loop(options):
   while True:
     before = time.time()
     sensor_id, data = readData(options)
-    log.debug(sensor_id, data)
+    log.debug(sensor_id)
+    log.debug(data)
     upload_telegraf(options, sensor_id, data)
 
     after = time.time()
