@@ -62,7 +62,7 @@ def parse_options():
   parser.add_option('-i', '--interval', dest='interval', type='int', help='Seconds between waking up and capturing data', default='300')
   parser.add_option('-b', '--baud_rate', dest='baud_rate', type='int', help='Serial communications port baud rate. Default: 115200', default=115200)
   parser.add_option('-a', '--slave_address', dest='slave_address', type='int', help='Sensor slave address. Default: 0', default=0)
-  parser.add_option('-m', '--measurement', dest='measurement', type='string', help='The measurement string used to submit to telegraf', default='sps')
+  parser.add_option('-m', '--measurement', dest='measurement', type='string', help='The measurement string used to submit to telegraf', default='sps30')
   parser.add_option('-d', '--dry_run', dest='dry_run', action='store_true', default=False, help='Read sensor but do not actually send data to telegraf')
   parser.add_option('--pm24', dest='pm_24', action='store_true', default=False, help='Backward compatibility: Store PM2.5 values with PM2.4 tag')
   parser.add_option('-t', '--telegraf_address', dest='telegraf', type='string', help='URL for telegraf instance. default: "http://192.168.160.220:8090/telegraf"',
