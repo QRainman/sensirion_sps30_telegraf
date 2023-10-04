@@ -16,25 +16,31 @@ import traceback
 log = logging.getLogger('SPS30_Sensor')
 SENSOR_VALUES = ['PM1.0', 'PM2.4', 'PM4.0', 'PM10', 'N_PM0.5', 'N_PM1.0', 'N_PM2.5', 'N_PM4.0', 'N_PM10', 'avg_size']
 
+
 class ShdlcCmdStart(ShdlcCommand):
   def __init__(self):
     super(ShdlcCmdStart, self).__init__(0x00, data=[0x01, 0x03], max_response_time=0.5, max_response_length=32, post_processing_time=2.0)
+
 
 class ShdlcCmdStartCleaning(ShdlcCommand):
   def __init__(self):
     super(ShdlcCmdStartCleaning, self).__init__(0x56, data=[], max_response_time=0.5, max_response_length=0, post_processing_time=15.0)
 
+
 class ShdlcCmdRead(ShdlcCommand):
   def __init__(self):
     super(ShdlcCmdRead, self).__init__(0x03, data=[], max_response_time=0.5, max_response_length=40, post_processing_time=0.5)
+
 
 class ShdlcCmdStop(ShdlcCommand):
   def __init__(self):
     super(ShdlcCmdStop, self).__init__(0x01, data=[], max_response_time=0.5, max_response_length=0, post_processing_time=2.0)
 
+
 class ShdlcCmdSleep(ShdlcCommand):
   def __init__(self):
     super(ShdlcCmdSleep, self).__init__(0x10, data=[], max_response_time=0.5, max_response_length=0, post_processing_time=2.0)
+
 
 class ShdlcCmdWake(ShdlcCommand):
   def __init__(self, device):
@@ -42,22 +48,23 @@ class ShdlcCmdWake(ShdlcCommand):
     port._serial.write(0xff)
     super(ShdlcCmdWake, self).__init__(0x11, data=[], max_response_time=0.5, max_response_length=0, post_processing_time=2.0)
 
+
 def parse_options():
   parser = OptionParser()
   parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False)
   parser.add_option('-n', '--num_mess', dest='number_mess', type='int', help='Number of measurements to perform and average', default=20)
-  parser.add_option('-s', '--sleep_int', dest='sleep_int', type = 'float', help='Time to wait between measurement iterations', default=1)
-  parser.add_option('-w', '--warmup_time', dest='warmup_time', type = 'float', help='Time to wait for fan to spin up and start measurements', default=20)
-  parser.add_option('-p', '--port', dest='port', type = 'string', help='path to serial port io file', default='/dev/ttyAMA0')
-  parser.add_option('-l', '--location', dest='location', type = 'string', help='location of the sensor', default='UnderStairs')
-  parser.add_option('-t', '--telegraf_address', dest='telegraf', type = 'string', help='URL for telegraf instance', default='http://192.168.178.220:8090/telegraf')
-  parser.add_option('-i', '--interval', dest='interval', type = 'int', help='Seconds between waking up and capturing data', default='300')
+  parser.add_option('-s', '--sleep_int', dest='sleep_int', type='float', help='Time to wait between measurement iterations', default=1)
+  parser.add_option('-w', '--warmup_time', dest='warmup_time', type='float', help='Time to wait for fan to spin up and start measurements', default=20)
+  parser.add_option('-p', '--port', dest='port', type='string', help='path to serial port io file', default='/dev/ttyAMA0')
+  parser.add_option('-l', '--location', dest='location', type='string', help='location of the sensor', default='UnderStairs')
+  parser.add_option('-t', '--telegraf_address', dest='telegraf', type='string', help='URL for telegraf instance', default='http://192.168.178.220:8090/telegraf')
+  parser.add_option('-i', '--interval', dest='interval', type='int', help='Seconds between waking up and capturing data', default='300')
 
   return parser.parse_args()
 
+
 def readData(options):
   averages = [0] * 10
-  sensor_id = ''
   with ShdlcSerialPort(port=options.port, baudrate=115200) as port:
     device = ShdlcDevice(ShdlcConnection(port), slave_address=0)
     log.debug('Waking device')
@@ -125,10 +132,10 @@ def upload_telegraf(options, sensor_id, data):
       log.debug('http response code   : %s' % response.status_code)
       log.debug('http response heaers : %s' % response.headers)
       log.debug('http response content: %s' % response.content)
-      #pass
     except:
       log.error('Failed to submit data string %s' % telegraf_string)
       log.error(traceback.format_exc())
+
 
 def main_loop(options):
   while True:
@@ -141,16 +148,11 @@ def main_loop(options):
     diff = options.interval - (after - before)
     if diff > 0:
       time.sleep(diff)
-    
+
 
 def main():
   options, args = parse_options()
   main_loop(options)
-
-  #Never gets called
-  sensor_id, data = readData(options)
-  upload_telegraf(options, sensor_id, data)
-  print(sensor_id, data)
 
 
 if __name__ == '__main__':
